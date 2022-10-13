@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from kraken.core import Project, Property
 from kraken.core.util.helpers import not_none
+from kraken.hs.env import get_environment
 
 from ..config import CargoRegistry
 from .cargo_build_task import CargoBuildTask
@@ -31,8 +32,13 @@ class CargoPublishTask(CargoBuildTask):
         registry = self.registry.get()
         if registry.publish_token is None:
             raise ValueError(f'registry {registry.alias!r} missing a "publish_token"')
+        environment = get_environment()
         command = (
-            ["cargo", "publish"]
+            ["cargo", "workspaces", "publish"]
+            + ["custom", environment.git_version]
+            + ["--from-git"]
+            + ["--allow-branch", environment.git_branch]
+            + ["--yes"]
             + self.additional_args.get()
             + ["--registry", registry.alias, "--token", registry.publish_token]
             + ([] if self.verify.get() else ["--no-verify"])
